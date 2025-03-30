@@ -1,9 +1,8 @@
-// customer-products.dart
-
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
 import 'package:ordering_system/settings.dart';
+import 'add-to-cart.dart'; // Make sure this file is in your project structure
 
 class CustomerProductsPage extends StatefulWidget {
   final Map<String, dynamic> user;
@@ -89,29 +88,25 @@ class _CustomerProductsPageState extends State<CustomerProductsPage> {
     );
   }
 
-  // Add product to cart by creating an order record (POST /orders)
-  Future<void> _addToCart(Map<String, dynamic> product) async {
-    // Prepare order data with count = 1 (default)
-    final orderData = {
-      'userId': widget.user['id'],
-      'productId': product['id'],
-      'count': 1,
-    };
-
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/orders'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(orderData),
-      );
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        _showAddToCartSuccessDialog(product);
-      } else {
-        _showErrorDialog('Failed to add to cart. (${response.statusCode})');
-      }
-    } catch (e) {
-      _showErrorDialog('Failed to add to cart. Please try again.');
+  // Add product to local cart (using global cartItems from add_to_cart.dart)
+  void _addToCart(Map<String, dynamic> product) {
+    // Check if product already exists in the cart
+    int index = cartItems.indexWhere((item) => item['id'] == product['id']);
+    if (index == -1) {
+      cartItems.add({
+        'id': product['id'],
+        'name': product['name'],
+        'price': product['price'],
+        'stock': product['stock'],
+        'count': 1,
+        'totalAmount': product['price']
+      });
+    } else {
+      cartItems[index]['count'] += 1;
+      cartItems[index]['totalAmount'] =
+          cartItems[index]['price'] * cartItems[index]['count'];
     }
+    _showAddToCartSuccessDialog(product);
   }
 
   void _showAddToCartSuccessDialog(Map<String, dynamic> product) {
@@ -130,18 +125,12 @@ class _CustomerProductsPageState extends State<CustomerProductsPage> {
     );
   }
 
-  void _showErrorDialog(String message) {
-    showCupertinoDialog(
-      context: context,
-      builder: (context) => CupertinoAlertDialog(
-        title: const Text('Error'),
-        content: Text(message),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('OK'),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
+  // Navigate to the Add To Cart page
+  void _navigateToCartPage() {
+    Navigator.push(
+      context,
+      CupertinoPageRoute(
+        builder: (context) => AddToCartPage(user: widget.user, baseUrl: baseUrl),
       ),
     );
   }
@@ -151,10 +140,20 @@ class _CustomerProductsPageState extends State<CustomerProductsPage> {
     return CupertinoPageScaffold(
       navigationBar: CupertinoNavigationBar(
         middle: const Text('Customer Products'),
-        trailing: CupertinoButton(
-          padding: EdgeInsets.zero,
-          child: const Icon(CupertinoIcons.settings),
-          onPressed: _navigateToSettingsPage,
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              child: const Icon(CupertinoIcons.shopping_cart),
+              onPressed: _navigateToCartPage,
+            ),
+            CupertinoButton(
+              padding: EdgeInsets.zero,
+              child: const Icon(CupertinoIcons.settings),
+              onPressed: _navigateToSettingsPage,
+            ),
+          ],
         ),
       ),
       child: SafeArea(
@@ -167,7 +166,7 @@ class _CustomerProductsPageState extends State<CustomerProductsPage> {
             return CupertinoListTile(
               onTap: () => _showProductDialog(product),
               leading: Image.network(
-                product['imgUrl'], // use the server key 'imgUrl'
+                product['imgUrl'],
                 width: 60,
                 height: 60,
                 fit: BoxFit.cover,
@@ -181,3 +180,15 @@ class _CustomerProductsPageState extends State<CustomerProductsPage> {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+// 
