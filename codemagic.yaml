@@ -4,7 +4,7 @@ workflows:
     environment:
       flutter: stable
       groups:
-        - signingConfig
+        - signingConfigs
     scripts:
       - flutter pub get
       # Decode your keystore from base64 and create the keystore file at correct location
