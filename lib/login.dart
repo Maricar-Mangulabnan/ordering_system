@@ -148,14 +148,21 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                   Container(
                     height: 100,
                     width: 100,
-
-                    child: Padding(
-                      padding: const EdgeInsets.all(0.0),
-                      child: Image.asset(
-                        'assets/icon.png',
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20.0), // adjust radius as needed
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20.0),
+                      child: Padding(
+                        padding: const EdgeInsets.all(0.0),
+                        child: Image.asset(
+                          'assets/icon.png',
+                          fit: BoxFit.cover, // ensures the image covers the container
+                        ),
                       ),
                     ),
                   ),
+
                   // App Title
                   const SizedBox(height: 8),
                   Text(
