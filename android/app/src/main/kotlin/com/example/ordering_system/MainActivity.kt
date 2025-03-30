@@ -1,4 +1,4 @@
-package com.example.ordering_system
+package com.bscs.ordering_system
 
 import io.flutter.embedding.android.FlutterActivity
 
