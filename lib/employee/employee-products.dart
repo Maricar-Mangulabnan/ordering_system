@@ -917,6 +917,7 @@ class _AddProductModalState extends State<AddProductModal> {
                   child: const Text(
                     'Add Product',
                     style: TextStyle(
+                      color: Colors.white,
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
