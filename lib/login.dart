@@ -239,18 +239,28 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                     width: double.infinity,
                     child: CupertinoButton(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      color: Colors.teal,
+                      color: _isLoading ? Colors.teal.withOpacity(0.9) : Colors.teal, // Dim the button when loading
                       borderRadius: BorderRadius.circular(12),
-                      onPressed: _isLoading ? null : _login,
-                      child: _isLoading
-                          ? const CupertinoActivityIndicator(color: CupertinoColors.white)
-                          : const Text(
-                        'Sign In',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      onPressed:_login, // Disable button when loading
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            'Sign In',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          if (_isLoading) ...[
+                            const SizedBox(width: 10),
+                            const CupertinoActivityIndicator(
+                              color: CupertinoColors.white,
+                              radius: 10,
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                   ),
