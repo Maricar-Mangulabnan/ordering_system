@@ -1,14 +1,22 @@
-// settings.dart
-
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:http/http.dart' as http;
+import 'login.dart'; // Ensure this path is correct for your project
 
 /// SettingsPage accepts a user parameter to pass along user data.
 class SettingsPage extends StatelessWidget {
   final Map<String, dynamic> user;
 
   const SettingsPage({Key? key, required this.user}) : super(key: key);
+
+  // Logout function: navigate to LoginPage and clear the navigation stack.
+  void _logout(BuildContext context) {
+    Navigator.pushAndRemoveUntil(
+      context,
+      CupertinoPageRoute(builder: (context) => const LoginPage()),
+          (route) => false,
+    );
+  }
 
   void _showAboutDialog(BuildContext context) {
     showCupertinoDialog(
@@ -37,8 +45,7 @@ class SettingsPage extends StatelessWidget {
           children: [
             // Account Settings Button
             CupertinoButton(
-              padding:
-              const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
               color: CupertinoColors.systemGrey6,
               onPressed: () {
                 Navigator.push(
@@ -59,8 +66,7 @@ class SettingsPage extends StatelessWidget {
             const SizedBox(height: 1),
             // About Button
             CupertinoButton(
-              padding:
-              const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
               color: CupertinoColors.systemGrey6,
               onPressed: () => _showAboutDialog(context),
               child: Row(
@@ -68,6 +74,20 @@ class SettingsPage extends StatelessWidget {
                   Icon(CupertinoIcons.info, color: CupertinoColors.activeBlue),
                   SizedBox(width: 12),
                   Text('About'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 1),
+            // Logout Button
+            CupertinoButton(
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+              color: CupertinoColors.systemGrey6,
+              onPressed: () => _logout(context),
+              child: Row(
+                children: const [
+                  Icon(CupertinoIcons.square_arrow_right, color: CupertinoColors.activeBlue),
+                  SizedBox(width: 12),
+                  Text('Logout'),
                 ],
               ),
             ),
@@ -94,25 +114,56 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
   // Use your deployed server URL.
   final String baseUrl = 'https://orderko-server.onrender.com';
 
+  // Extract actual user data; in your login response the user data is nested under "user".
+  late Map<String, dynamic> currentUser;
+
   @override
   void initState() {
     super.initState();
-    _usernameController =
-        TextEditingController(text: widget.user['username'] ?? '');
-    _passwordController =
-        TextEditingController(text: widget.user['password'] ?? '');
+    currentUser = widget.user.containsKey('user') ? widget.user['user'] : widget.user;
+    _usernameController = TextEditingController(text: currentUser['username'] ?? '');
+    _passwordController = TextEditingController(text: currentUser['password'] ?? '');
+  }
+
+  // Logout function: navigate to LoginPage and clear the navigation stack.
+  void _logout() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      CupertinoPageRoute(builder: (context) => const LoginPage()),
+          (route) => false,
+    );
+  }
+
+  // Show dialog and then logout.
+  void _showDialogAndLogout(String title, String message) {
+    showCupertinoDialog(
+      context: context,
+      builder: (context) => CupertinoAlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('OK'),
+            onPressed: () {
+              Navigator.pop(context);
+              _logout();
+            },
+          )
+        ],
+      ),
+    );
   }
 
   Future<void> _updateAccount() async {
     final updatedData = {
       'username': _usernameController.text.trim(),
       'password': _passwordController.text.trim(),
-      'role': widget.user['role'], // keep the current role
+      'role': currentUser['role'], // keep the current role unchanged
     };
 
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl/users/${widget.user['id']}'),
+        Uri.parse('$baseUrl/users/${currentUser['id']}'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(updatedData),
       );
@@ -120,37 +171,32 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
       if (response.statusCode == 200) {
         final updatedUser = jsonDecode(response.body);
         setState(() {
-          widget.user['username'] = updatedUser['username'];
-          widget.user['password'] = updatedUser['password'];
+          currentUser['username'] = updatedUser['username'];
+          currentUser['password'] = updatedUser['password'];
         });
-        _showDialog('Success', 'Your account details have been updated.');
+        _showDialogAndLogout('Success', 'Your account details have been updated. Please log in again.');
       } else {
         final errorData = jsonDecode(response.body);
-        _showDialog('Error',
-            errorData['error'] ?? 'Failed to update account.');
+        _showDialog('Error', errorData['error'] ?? 'Failed to update account.');
       }
     } catch (e) {
-      _showDialog(
-          'Error', 'Failed to connect to server. Please try again later.');
+      _showDialog('Error', 'Failed to connect to server. Please try again later.');
     }
   }
 
   Future<void> _deleteAccount() async {
     try {
       final response = await http.delete(
-        Uri.parse('$baseUrl/users/${widget.user['id']}'),
+        Uri.parse('$baseUrl/users/${currentUser['id']}'),
       );
       if (response.statusCode == 200) {
-        _showDialog('Account Deleted', 'Your account has been deleted.');
-        // Optionally, navigate to the login screen.
+        _showDialogAndLogout('Account Deleted', 'Your account has been deleted. Please log in again.');
       } else {
         final errorData = jsonDecode(response.body);
-        _showDialog('Error',
-            errorData['error'] ?? 'Failed to delete account.');
+        _showDialog('Error', errorData['error'] ?? 'Failed to delete account.');
       }
     } catch (e) {
-      _showDialog(
-          'Error', 'Failed to connect to server. Please try again later.');
+      _showDialog('Error', 'Failed to connect to server. Please try again later.');
     }
   }
 
@@ -159,8 +205,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
       context: context,
       builder: (context) => CupertinoAlertDialog(
         title: const Text('Delete Account'),
-        content: Text(
-            'Are you sure you want to delete your account, ${widget.user['username']}? This action cannot be undone.'),
+        content: Text('Are you sure you want to delete your account, ${currentUser['username']}? This action cannot be undone.'),
         actions: [
           CupertinoDialogAction(
             isDestructiveAction: true,
@@ -198,15 +243,22 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      navigationBar:
-      const CupertinoNavigationBar(middle: Text('Account Settings')),
+      navigationBar: const CupertinoNavigationBar(middle: Text('Account Settings')),
       child: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
-              const Icon(CupertinoIcons.person_circle,
-                  size: 100, color: CupertinoColors.systemGrey),
+              const Icon(CupertinoIcons.person_circle, size: 100, color: CupertinoColors.systemGrey),
+              const SizedBox(height: 16),
+              // Display role as read-only.
+              Row(
+                children: [
+                  const Icon(CupertinoIcons.info, size: 24),
+                  const SizedBox(width: 12),
+                  Text('Role: ${currentUser['role']}'),
+                ],
+              ),
               const SizedBox(height: 16),
               CupertinoTextField(
                 controller: _usernameController,
@@ -230,6 +282,12 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                 color: CupertinoColors.destructiveRed,
                 onPressed: _confirmDeleteAccount,
                 child: const Text('Delete Account'),
+              ),
+              const SizedBox(height: 16),
+              // Logout button in the Account Settings page as well.
+              CupertinoButton(
+                onPressed: _logout,
+                child: const Text('Logout'),
               ),
             ],
           ),
